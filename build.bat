@@ -40,7 +40,7 @@ REM Add rustc.exe and cargo.exe folder to Windows PATH (default path is C:\Users
 
 REM Flash Attention v3 build has been disabled inside WSL2 and Windows due to compiler being killed on WSL2, and extremely long compiling times on Windows. Hopper is not available on Windows, so FA3 has no sense anyway. 
 REM Build can be forcefully enabled using the following environment var:
-set VLLM_FORCE_FA3_WINDOWS_BUILD=1
+REM set VLLM_FORCE_FA3_WINDOWS_BUILD=1
 
 if not exist venv (
     python -m venv venv

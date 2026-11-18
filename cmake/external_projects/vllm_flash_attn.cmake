@@ -41,6 +41,8 @@ else()
           GIT_REPOSITORY https://github.com/vllm-project/flash-attention.git
           GIT_TAG b273a02621d3c94bc747df67204f591b67f38fae
           GIT_PROGRESS TRUE
+          GIT_SUBMODULES "csrc/cutlass"
+          GIT_SUBMODULES_RECURSE FALSE
           # Don't share the vllm-flash-attn build between build types
           BINARY_DIR ${CMAKE_BINARY_DIR}/vllm-flash-attn
   )
@@ -63,6 +65,9 @@ install(CODE "set(CMAKE_INSTALL_PREFIX \"\${CMAKE_INSTALL_PREFIX}/vllm/\")" ALL_
 if (WIN32)
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/Zc:preprocessor")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:preprocessor")
+  if (NOT "$ENV{VLLM_FORCE_FA3_WINDOWS_BUILD}" STREQUAL "1")
+    set(FA3_ENABLED OFF CACHE BOOL "Enable FA3" FORCE)
+  endif()
 endif()
 
 FetchContent_MakeAvailable(vllm-flash-attn)

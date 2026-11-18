@@ -1,8 +1,21 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index a7dd915..72260b2 100644
+index a7dd915..f0aaef5 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -19,7 +19,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/utils.cmake)
+@@ -5,7 +5,11 @@ set(CMAKE_CXX_STANDARD 20)
+ set(CMAKE_CXX_EXTENSIONS OFF)
+ 
+ set(FA2_ENABLED ON)
+-set(FA3_ENABLED ON)
++if (WIN32 AND NOT "$ENV{VLLM_FORCE_FA3_WINDOWS_BUILD}" STREQUAL "1")
++  set(FA3_ENABLED OFF)
++else()
++  set(FA3_ENABLED ON)
++endif()
+ 
+ # CUDA by default, can be overridden by using -DVLLM_TARGET_DEVICE=... (used by setup.py)
+ set(VLLM_TARGET_DEVICE "cuda" CACHE STRING "Target device backend for vLLM")
+@@ -19,7 +25,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/utils.cmake)
  set(ignoreMe "${VLLM_PYTHON_PATH}")
  
  # Supported python versions. These should be kept in sync with setup.py.
@@ -11,6 +24,36 @@ index a7dd915..72260b2 100644
  
  # Supported NVIDIA architectures.
  set(CUDA_SUPPORTED_ARCHS "8.0;8.6;8.9;9.0")
+diff --git a/csrc/common/registration.h b/csrc/common/registration.h
+index 792d32f..676322e 100644
+--- a/csrc/common/registration.h
++++ b/csrc/common/registration.h
+@@ -2,11 +2,21 @@
+ 
+ #include <Python.h>
+ 
+-#define _CONCAT(A, B) A##B
+-#define CONCAT(A, B) _CONCAT(A, B)
++#ifndef VLLM_CONCAT
++#define VLLM_CONCAT_IMPL(A, B) A##B
++#define VLLM_CONCAT(A, B) VLLM_CONCAT_IMPL(A, B)
++#endif
++#ifndef CONCAT
++#define CONCAT(A, B) VLLM_CONCAT(A, B)
++#endif
+ 
+-#define _STRINGIFY(A) #A
+-#define STRINGIFY(A) _STRINGIFY(A)
++#ifndef VLLM_STRINGIFY
++#define VLLM_STRINGIFY_IMPL(A) #A
++#define VLLM_STRINGIFY(A) VLLM_STRINGIFY_IMPL(A)
++#endif
++#ifndef STRINGIFY
++#define STRINGIFY(A) VLLM_STRINGIFY(A)
++#endif
+ 
+ // A version of the TORCH_LIBRARY macro that expands the NAME, i.e. so NAME
+ // could be a macro instead of a literal token.
 diff --git a/csrc/flash_attn/flash_api.cpp b/csrc/flash_attn/flash_api.cpp
 index 60d29f2..dc4e66d 100644
 --- a/csrc/flash_attn/flash_api.cpp

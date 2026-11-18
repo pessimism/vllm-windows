@@ -167,6 +167,26 @@ This document tracks the review, investigation, warning-as-errors configuration,
   Like in finding 3.7, vendored copies of `registration.h` in `vllm-flash-attn` and `deepgemm` defined `#define _CONCAT(A, B) A##B`. When compiling `_vllm_fa2_C` (`flash_api_torch_lib.cpp`), MSVC's `<xatomic.h>` was included after `registration.h`, triggering `warning C4005: '_CONCAT': macro redefinition` (fatal under `/WX`).
 - **Fix**: Replaced with `VLLM_CONCAT` and `VLLM_STRINGIFY` implementations matching `csrc/core/registration.h`.
 
+### 3.21 FlashAttention-v3 (FA3) Incompatibility on Windows
+- **Location**: `build.bat:43`, `.deps/vllm-flash-attn-src/hopper/flash_api.cpp:302-350`
+- **Issue**:
+  - `build.bat` had active `set VLLM_FORCE_FA3_WINDOWS_BUILD=1`.
+  - FlashAttention-v3 (`_vllm_fa3_C`) is written strictly for Hopper (SM90) architecture, which has no Windows drivers or consumer hardware.
+  - In `hopper/flash_api.cpp`, `#ifdef` and `#ifndef` directives were placed directly inside macro arguments (`PACKGQA_SWITCH`, `ARCH_SWITCH`), which is undefined behavior under C++ ISO standards and fails on MSVC (`error C2121: '#': invalid character: possibly the result of a macro expansion`, `warning C5101`).
+- **Fix**:
+  - Commented out `set VLLM_FORCE_FA3_WINDOWS_BUILD=1` in `build.bat`.
+  - Configured `set(FA3_ENABLED OFF CACHE BOOL "Enable FA3" FORCE)` on Windows in `cmake/external_projects/vllm_flash_attn.cmake`.
+  - Updated `cmake/patches/windows_flash_attn.patch` so clean checkouts disable `FA3_ENABLED` automatically on Windows.
+
+### 3.22 Recursive Submodule Bloat in `vllm-flash-attn` (`composable_kernel`)
+- **Location**: `cmake/external_projects/vllm_flash_attn.cmake:39-47`
+- **Issue**:
+  - `FetchContent_Declare(vllm-flash-attn ...)` without submodule restrictions defaults to recursive git submodule initialization.
+  - `vllm-flash-attn` references `third_party/aiter` (AMD ROCm), which in turn submodules `ROCm/composable_kernel.git` (a multi-gigabyte repository).
+  - During CMake configuration, git clones gigabytes of unused ROCm code on a Windows CUDA build.
+- **Fix**:
+  - Added `GIT_SUBMODULES "csrc/cutlass"` and `GIT_SUBMODULES_RECURSE FALSE` to `FetchContent_Declare(vllm-flash-attn)` so git only initializes the essential Cutlass headers required by FA2.
+
 ---
 
 ## 4. Iteration Log
@@ -185,4 +205,6 @@ This document tracks the review, investigation, warning-as-errors configuration,
 | **10** | Renamed `_CONCAT`/`_STRINGIFY` to `VLLM_CONCAT`/`VLLM_STRINGIFY` in `registration.h`; resumed build with `MAX_JOBS=4`. | Passed both `_moe_C_stable_libtorch` and `_C_stable_libtorch` `torch_bindings.cpp`. Target 38/316 (`_qutlass_C/gemm.cu`) failed on nvcc `#3189-D` (`"module" is parsed as an identifier`) in PyTorch's headers. |
 | **11** | Added `3189` to `--diag-suppress` in `CMakeLists.txt`; resumed build with `MAX_JOBS=4`. | `#3189-D` suppressed; targets 113/393 & 114/393 (`_qutlass_C`'s `bindings.cpp` & `gemm.cu`) encountered MSVC warning `C4267` (`size_t` to `int` loss of data) in PyTorch's `function_schema.h` and `compiled_autograd.h`. |
 | **12** | Added `/wd4267` to MSVC compiler flags; resumed build with `MAX_JOBS=4`. | Progressed through target 125/398. Target 126/398 (`_vllm_fa2_C`'s `flash_api_torch_lib.cpp`) failed on vendored `registration.h` in `.deps/vllm-flash-attn-src`. |
-| **13** | Patched vendored `registration.h` in `vllm-flash-attn` and `deepgemm`; resumed build with `MAX_JOBS=4`. | In progress. |
+| **13** | Patched vendored `registration.h` in `vllm-flash-attn` and `deepgemm`; resumed build with `MAX_JOBS=4`. | Target `_vllm_fa2_C` (`flash_api_torch_lib.cpp`) compiled cleanly! Target `_vllm_fa3_C` (`hopper/flash_api.cpp`) failed on directives inside macro args. |
+| **14** | Disabled FA3 on Windows (non-applicable for consumer GPUs and sm_120; unblocked FA2); resumed build with `MAX_JOBS=4`. | Build completed 409/409 compilation units cleanly! Linking of all `.pyd` extensions succeeded. |
+| **15** | Restricted `vllm-flash-attn` FetchContent submodules to `csrc/cutlass` (preventing multi-gigabyte ROCm `composable_kernel` clone) and ran clean rebuild with `MAX_JOBS=4`. | In progress (343 total compilation targets). |
