@@ -45,6 +45,6 @@ quack-kernels==0.6.5; sys_platform != "win32" or platform_machine != 'ARM64'  # 
 # Tokenspeed_MLA for faster mla with spec decode
 tokenspeed-mla==2.0.3; platform_system == "Linux"
 
-# Humming kernels for quantization gemm
-humming-kernels[cu13]==0.1.19; sys_platform != "win32"
-humming-kernels[cu13] @ git+https://github.com/SystemPanic/humming-windows.git@v0.1.17 ; sys_platform == "win32"
+# Humming kernels for quantization gemm (optional runtime backend; moved to requirements/humming.txt)
+# humming-kernels is decoupled from core package restore to avoid multi-gigabyte git clones.
+# Install via: uv pip install -r requirements/humming.txt

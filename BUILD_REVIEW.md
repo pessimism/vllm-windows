@@ -196,6 +196,38 @@ This document tracks the review, investigation, warning-as-errors configuration,
   - Added `/wd5285 /wd4267 /wd4244 --diag-suppress=177,3189` to `CMAKE_CUDA_FLAGS`, `CMAKE_CXX_FLAGS`, and `target_compile_options` in `cmake/external_projects/vllm_flash_attn.cmake`.
   - Updated `fix_cutlass_msvc.py` to automatically prepend `#if defined(_MSC_VER)\n#pragma warning(disable: 5285)\n#endif\n` into `array_subbyte.hpp`.
 
+### 3.24 Successful End-to-End Build, Extension Linkage, & Runtime Verification
+- **Status**: Complete & Verified.
+- **Outcome**:
+  - All 214/214 compilation targets finished cleanly under `/WX` (warnings-as-errors).
+  - All binary `.pyd` shared modules compiled and linked without warnings or errors:
+    - `_C_stable_libtorch.pyd` (37.2 MB)
+    - `_moe_C_stable_libtorch.pyd` (17.4 MB)
+    - `_vllm_fa2_C.pyd` (378.5 MB)
+    - `_qutlass_C.cp312-win_amd64.pyd` (3.1 MB)
+    - `_flashkda_C.pyd` (3.5 MB)
+    - `deepgemm_C\_C_extension.pyd` (1.4 MB)
+    - `cumem_allocator.pyd` (266 KB)
+    - `fs_io_C.pyd` (103 KB)
+    - `spinloop.pyd` (38 KB)
+  - Smoke tests confirmed clean Python import:
+    - `vllm.__version__`: `0.1.dev23865+g209db4d36`
+    - `import vllm._C_stable_libtorch`: Success
+    - `import vllm._moe_C_stable_libtorch`: Success
+    - `import vllm.vllm_flash_attn` / `torch.ops._vllm_fa2_C`: Success
+    - All auxiliary C++/CUDA extensions: Success
+
+### 3.25 Decoupling of `humming-windows` Git Dependency
+- **Location**: `requirements/cuda.txt:48-50` -> `requirements/humming.txt`
+- **Issue**:
+  - `requirements/cuda.txt` forced `humming-kernels[cu13] @ git+https://github.com/SystemPanic/humming-windows.git@v0.1.17 ; sys_platform == "win32"` during core package restore.
+  - The `[cu13]` extra pulls >3 GB of PyPI packages (`nvidia-cuda-nvcc` etc.) despite native CUDA 13.5 presence, and clones a large Git repository.
+  - None of vLLM's C++/CUDA binaries link against `humming`; it is a purely optional runtime quantization backend dynamically loaded through `vllm/utils/humming.py`.
+- **Fix**:
+  - Created standalone `requirements/humming.txt`.
+  - Removed mandatory restore from `requirements/cuda.txt`.
+  - Added optional `INSTALL_HUMMING=1` opt-in flag in `build.bat`.
+
 ---
 
 ## 4. Iteration Log
@@ -217,4 +249,7 @@ This document tracks the review, investigation, warning-as-errors configuration,
 | **13** | Patched vendored `registration.h` in `vllm-flash-attn` and `deepgemm`; resumed build with `MAX_JOBS=4`. | Target `_vllm_fa2_C` (`flash_api_torch_lib.cpp`) compiled cleanly! Target `_vllm_fa3_C` (`hopper/flash_api.cpp`) failed on directives inside macro args. |
 | **14** | Disabled FA3 on Windows (non-applicable for consumer GPUs and sm_120; unblocked FA2); resumed build with `MAX_JOBS=4`. | Build completed 409/409 compilation units cleanly! Linking of all `.pyd` extensions succeeded. |
 | **15** | Restricted `vllm-flash-attn` FetchContent submodules to `csrc/cutlass` (preventing multi-gigabyte ROCm `composable_kernel` clone) and ran clean rebuild with `MAX_JOBS=4`. | Target 149/343 (`flash_fwd_split_*.cu`) triggered C5285 in vendored CUTLASS `array_subbyte.hpp`. |
-| **16** | Added `/wd5285` to `_vllm_fa2_C` and patched `array_subbyte.hpp` in `fix_cutlass_msvc.py`; resumed build with `MAX_JOBS=4`. | In progress. |
+| **16** | Added `/wd5285` to `_vllm_fa2_C` and patched `array_subbyte.hpp` in `fix_cutlass_msvc.py`; resumed build with `MAX_JOBS=4`. | Clean compilation of all remaining 214 targets, including all `flash_fwd_split_*.cu` units and linking of `_vllm_fa2_C.pyd`. |
+| **17** | Ran `uv pip install -e . --no-build-isolation --no-deps`. | Installed `vllm==0.1.dev23865+g209db4d36.cu135` in `venv`. |
+| **18** | Smoke tested runtime imports (`vllm`, `_C_stable_libtorch`, `_moe_C_stable_libtorch`, `vllm_flash_attn`, etc.). | All modules imported and registered into `torch.ops` without errors. |
+| **19** | Decoupled `humming-windows` Git dependency into `requirements/humming.txt` with optional opt-in; updated `build.bat` parallelism to `MAX_JOBS=12`. | Decoupling complete; parallelism increased to 12. |

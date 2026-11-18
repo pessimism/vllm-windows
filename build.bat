@@ -3,8 +3,8 @@ set DISTUTILS_USE_SDK=1
 set VLLM_TARGET_DEVICE=cuda
 REM replace YOUR_GPU_ARCH with the GPU architectures you want to build against, for example, for RTX 30XX, RTX 40XX and RTX 50XX: 8.6;8.9;12.0
 set TORCH_CUDA_ARCH_LIST=12.0a
-REM (replace 4 with your desired cpu threads to use in parallel to speed up compilation)
-set MAX_JOBS=4
+REM (replace 12 with your desired cpu threads to use in parallel to speed up compilation)
+set MAX_JOBS=12
 
 REM Setup Visual Studio x64 Native Tools environment if not already loaded
 where cl >nul 2>nul
@@ -54,4 +54,10 @@ uv pip install -r requirements/build/cuda.txt
 uv pip install -r requirements/cuda.txt
 uv pip install -r requirements/windows.txt
 
-uv pip install . --no-build-isolation -vvv
+REM Optional: Humming kernels for quantization GEMM (clones large git repo if enabled)
+REM set INSTALL_HUMMING=1
+if "%INSTALL_HUMMING%"=="1" (
+    uv pip install -r requirements/humming.txt
+)
+
+uv pip install -e . --no-build-isolation --no-deps -vvv
