@@ -35,3 +35,12 @@ if os.path.exists(cuda_tensor_fill_arm64):
         content = content.replace("return Element(NAN);", "return Element(std::numeric_limits<float>::quiet_NaN());")
         with open(cuda_tensor_fill_arm64, mode="w", encoding="utf-8") as file:
             file.write(content)
+
+array_subbyte_file = os.path.join(cutlass_base_dir, "include", "cute", "container", "array_subbyte.hpp")
+if os.path.exists(array_subbyte_file):
+    with open(array_subbyte_file, mode="r", encoding="utf-8") as file:
+        content = file.read()
+    if "#pragma warning(disable: 5285)" not in content:
+        content = "#if defined(_MSC_VER)\n#pragma warning(disable: 5285)\n#endif\n" + content
+        with open(array_subbyte_file, mode="w", encoding="utf-8") as file:
+            file.write(content)

@@ -63,8 +63,8 @@ install(CODE "set(CMAKE_INSTALL_PREFIX \"\${CMAKE_INSTALL_PREFIX}/vllm/\")" ALL_
 # into the flash-attn build.  CMAKE_CACHE_ARGS does NOT work with
 # FetchContent_MakeAvailable — it is silently ignored.
 if (WIN32)
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/Zc:preprocessor")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:preprocessor")
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/Zc:preprocessor -Xcompiler=/wd5285 -Xcompiler=/wd4267 -Xcompiler=/wd4244 --diag-suppress=177,3189")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:preprocessor /wd5285 /wd4267 /wd4244")
   if (NOT "$ENV{VLLM_FORCE_FA3_WINDOWS_BUILD}" STREQUAL "1")
     set(FA3_ENABLED OFF CACHE BOOL "Enable FA3" FORCE)
   endif()
@@ -80,8 +80,8 @@ if (WIN32)
   foreach(_fa_tgt _vllm_fa2_C _vllm_fa3_C)
     if(TARGET ${_fa_tgt})
       target_compile_options(${_fa_tgt} PRIVATE
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/Zc:preprocessor>
-        $<$<COMPILE_LANGUAGE:CXX>:/Zc:preprocessor>
+        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/Zc:preprocessor -Xcompiler=/wd5285 -Xcompiler=/wd4267 -Xcompiler=/wd4244 --diag-suppress=177,3189>
+        $<$<COMPILE_LANGUAGE:CXX>:/Zc:preprocessor /wd5285 /wd4267 /wd4244>
       )
     endif()
   endforeach()

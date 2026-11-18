@@ -187,6 +187,15 @@ This document tracks the review, investigation, warning-as-errors configuration,
 - **Fix**:
   - Added `GIT_SUBMODULES "csrc/cutlass"` and `GIT_SUBMODULES_RECURSE FALSE` to `FetchContent_Declare(vllm-flash-attn)` so git only initializes the essential Cutlass headers required by FA2.
 
+### 3.23 MSVC 2026 Warning C5285 in Vendored CUTLASS (`_vllm_fa2_C`)
+- **Location**: `.deps/vllm-flash-attn-src/csrc/cutlass/include/cute/container/array_subbyte.hpp:598`
+- **Issue**:
+  - In `flash_fwd_split_*.cu`, compiling with MSVC 2026 emitted `warning C5285: cannot declare a specialization for 'std::is_reference'` from CUTLASS's `array_subbyte.hpp`.
+  - Under `/WX`, this was fatal because `_vllm_fa2_C` did not inherit top-level `/wd5285`.
+- **Fix**:
+  - Added `/wd5285 /wd4267 /wd4244 --diag-suppress=177,3189` to `CMAKE_CUDA_FLAGS`, `CMAKE_CXX_FLAGS`, and `target_compile_options` in `cmake/external_projects/vllm_flash_attn.cmake`.
+  - Updated `fix_cutlass_msvc.py` to automatically prepend `#if defined(_MSC_VER)\n#pragma warning(disable: 5285)\n#endif\n` into `array_subbyte.hpp`.
+
 ---
 
 ## 4. Iteration Log
@@ -207,4 +216,5 @@ This document tracks the review, investigation, warning-as-errors configuration,
 | **12** | Added `/wd4267` to MSVC compiler flags; resumed build with `MAX_JOBS=4`. | Progressed through target 125/398. Target 126/398 (`_vllm_fa2_C`'s `flash_api_torch_lib.cpp`) failed on vendored `registration.h` in `.deps/vllm-flash-attn-src`. |
 | **13** | Patched vendored `registration.h` in `vllm-flash-attn` and `deepgemm`; resumed build with `MAX_JOBS=4`. | Target `_vllm_fa2_C` (`flash_api_torch_lib.cpp`) compiled cleanly! Target `_vllm_fa3_C` (`hopper/flash_api.cpp`) failed on directives inside macro args. |
 | **14** | Disabled FA3 on Windows (non-applicable for consumer GPUs and sm_120; unblocked FA2); resumed build with `MAX_JOBS=4`. | Build completed 409/409 compilation units cleanly! Linking of all `.pyd` extensions succeeded. |
-| **15** | Restricted `vllm-flash-attn` FetchContent submodules to `csrc/cutlass` (preventing multi-gigabyte ROCm `composable_kernel` clone) and ran clean rebuild with `MAX_JOBS=4`. | In progress (343 total compilation targets). |
+| **15** | Restricted `vllm-flash-attn` FetchContent submodules to `csrc/cutlass` (preventing multi-gigabyte ROCm `composable_kernel` clone) and ran clean rebuild with `MAX_JOBS=4`. | Target 149/343 (`flash_fwd_split_*.cu`) triggered C5285 in vendored CUTLASS `array_subbyte.hpp`. |
+| **16** | Added `/wd5285` to `_vllm_fa2_C` and patched `array_subbyte.hpp` in `fix_cutlass_msvc.py`; resumed build with `MAX_JOBS=4`. | In progress. |
