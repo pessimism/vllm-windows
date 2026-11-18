@@ -147,10 +147,14 @@ void register_graph_buffers(fptr_t _fa,
   auto fa = reinterpret_cast<vllm::CustomAllreduce*>(_fa);
   std::vector<std::string> bytes;
   bytes.reserve(handles.size());
-  for (int i = 0; i < handles.size(); i++) {
-    bytes.emplace_back(handles[i].begin(), handles[i].end());
+  for (size_t i = 0; i < handles.size(); i++) {
+    std::string s;
+    s.reserve(handles[i].size());
+    for (int64_t b : handles[i]) {
+      s.push_back(static_cast<char>(b));
+    }
+    bytes.push_back(std::move(s));
   }
-  bytes.reserve(handles.size());
   fa->register_graph_buffers(bytes, offsets);
 }
 

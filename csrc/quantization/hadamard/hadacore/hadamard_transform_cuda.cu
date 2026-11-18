@@ -101,10 +101,10 @@ __device__ __forceinline__ void matrix_transpose_m8_n8_b16_inplace(b32& a0) {
     );
 }
 
-#define p_p(i) ((val_1p[i] & 0x0000FFFF) | val_1p[i] << 16)
-#define p_n(i) ((val_1p[i] & 0x0000FFFF) | val_1n[i] << 16)
-#define n_p(i) ((val_1n[i] & 0x0000FFFF) | val_1p[i] << 16)
-#define n_n(i) ((val_1n[i] & 0x0000FFFF) | val_1n[i] << 16)
+#define p_p(i) ((static_cast<uint32_t>(val_1p[i]) & 0x0000FFFFu) | (static_cast<uint32_t>(val_1p[i]) << 16))
+#define p_n(i) ((static_cast<uint32_t>(val_1p[i]) & 0x0000FFFFu) | (static_cast<uint32_t>(val_1n[i]) << 16))
+#define n_p(i) ((static_cast<uint32_t>(val_1n[i]) & 0x0000FFFFu) | (static_cast<uint32_t>(val_1p[i]) << 16))
+#define n_n(i) ((static_cast<uint32_t>(val_1n[i]) & 0x0000FFFFu) | (static_cast<uint32_t>(val_1n[i]) << 16))
 
 template<int64_t num_chunks, int64_t warps_per_block, int64_t log_had_size, int64_t blocks_per_sm, bool enable_mask, torch::headeronly::ScalarType dtype>
 __global__ void __launch_bounds__(32 * warps_per_block, blocks_per_sm)

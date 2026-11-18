@@ -87,9 +87,9 @@ class ScalarType {
  private:
   // Field size in id
   template <typename T_>
-  static constexpr size_t member_id_field_width() {
+  static constexpr uint32_t member_id_field_width() {
     using T = std::decay_t<T_>;
-    return std::is_same_v<T, bool> ? 1 : sizeof(T) * 8;
+    return std::is_same_v<T, bool> ? 1u : static_cast<uint32_t>(sizeof(T) * 8);
   }
 
   template <typename Fn, typename Init, typename Member, typename... Rest>
@@ -116,12 +116,12 @@ class ScalarType {
     return dummy_type.reduce_members(f, init);
   };
 
-  static constexpr auto id_size_bits() {
+  static constexpr uint32_t id_size_bits() {
     return reduce_member_types(
-        [](int acc, auto member) -> int {
+        [](uint32_t acc, auto member) -> uint32_t {
           return acc + member_id_field_width<decltype(member)>();
         },
-        0);
+        0u);
   }
 
  public:
@@ -136,8 +136,9 @@ class ScalarType {
                              auto member) -> std::pair<Id, uint32_t> {
       auto [id, bit_offset] = result;
       auto constexpr bits = member_id_field_width<decltype(member)>();
-      return {id | (int64_t(member) & ((uint64_t(1) << bits) - 1))
-                       << bit_offset,
+      auto constexpr mask =
+          (bits >= 64) ? ~uint64_t(0) : ((uint64_t(1) << bits) - 1);
+      return {id | static_cast<Id>((uint64_t(member) & mask) << bit_offset),
               bit_offset + bits};
     };
     return reduce_members(or_and_advance, std::pair<Id, uint32_t>{}).first;
@@ -151,14 +152,16 @@ class ScalarType {
       using T = decltype(member);
       auto [tuple, bit_offset] = result;
       auto constexpr bits = member_id_field_width<T>();
-      auto extracted_val = static_cast<T>((int64_t(id) >> bit_offset) &
-                                          ((uint64_t(1) << bits) - 1));
+      auto constexpr mask =
+          (bits >= 64) ? ~uint64_t(0) : ((uint64_t(1) << bits) - 1);
+      auto extracted_val = static_cast<T>((uint64_t(id) >> bit_offset) & mask);
       auto new_tuple = std::tuple_cat(tuple, std::make_tuple(extracted_val));
-      return std::pair<decltype(new_tuple), int>{new_tuple, bit_offset + bits};
+      return std::pair<decltype(new_tuple), uint32_t>{new_tuple,
+                                                      bit_offset + bits};
     };
 
-    auto [tuple_args, _] = reduce_member_types(extract_and_advance,
-                                               std::pair<std::tuple<>, int>{});
+    auto [tuple_args, _] = reduce_member_types(
+        extract_and_advance, std::pair<std::tuple<>, uint32_t>{});
     return std::apply([](auto... args) { return ScalarType(args...); },
                       tuple_args);
   }

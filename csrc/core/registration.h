@@ -2,11 +2,21 @@
 
 #include <Python.h>
 
-#define _CONCAT(A, B) A##B
-#define CONCAT(A, B) _CONCAT(A, B)
+#ifndef VLLM_CONCAT
+#define VLLM_CONCAT_IMPL(A, B) A##B
+#define VLLM_CONCAT(A, B) VLLM_CONCAT_IMPL(A, B)
+#endif
+#ifndef CONCAT
+#define CONCAT(A, B) VLLM_CONCAT(A, B)
+#endif
 
-#define _STRINGIFY(A) #A
-#define STRINGIFY(A) _STRINGIFY(A)
+#ifndef VLLM_STRINGIFY
+#define VLLM_STRINGIFY_IMPL(A) #A
+#define VLLM_STRINGIFY(A) VLLM_STRINGIFY_IMPL(A)
+#endif
+#ifndef STRINGIFY
+#define STRINGIFY(A) VLLM_STRINGIFY(A)
+#endif
 
 // A version of the TORCH_LIBRARY macro that expands the NAME, i.e. so NAME
 // could be a macro instead of a literal token.

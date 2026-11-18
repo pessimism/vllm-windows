@@ -11,6 +11,7 @@
 #include <cub/cub.cuh>
 #include <cstdint>
 
+#include "launch_bounds_utils.h"
 #include "topk_histogram_4096.cuh"
 #include "persistent_topk_overflow.cuh"
 
@@ -609,7 +610,7 @@ __device__ void radix_topk(const float* __restrict__ row_input,
 // ============================================================================
 
 template <int TopK = 2048, uint32_t VEC_SIZE = 1>
-__global__ void __launch_bounds__(kThreadsPerBlock, 2)
+__global__ void __launch_bounds__(kThreadsPerBlock, VLLM_BLOCKS_PER_SM(kThreadsPerBlock))
     persistent_topk_kernel(PersistentTopKParams params) {
   const uint32_t tx = threadIdx.x;
   extern __shared__ uint8_t smem_raw[];

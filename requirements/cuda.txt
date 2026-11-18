@@ -27,7 +27,7 @@ flashinfer-python==0.7.2.post1; sys_platform != "win32"
 flashinfer-python @ https://github.com/SystemPanic/flashinfer-windows/releases/download/v0.7.0.post1/flashinfer_python-0.7.0.post1-py3-none-any.whl ; sys_platform == "win32" and platform_machine != 'ARM64'
 flashinfer-python @ https://github.com/SystemPanic/flashinfer-windows/releases/download/v0.6.11.post3+spark/flashinfer_python-0.6.11.post3-py3-none-any.whl ; sys_platform == "win32" and platform_machine == 'ARM64'
 flashinfer-cubin==0.7.0.post1; sys_platform == "win32" and platform_machine != 'ARM64'
-flashinfer-jit-cache @ https://github.com/SystemPanic/flashinfer-windows/releases/download/v0.6.11.post3+spark/flashinfer_jit_cache-0.6.11.post3-cp39-abi3-win_arm64.whl; sys_platform == "win32" and platform_machine != 'ARM64'
+flashinfer-jit-cache @ https://github.com/SystemPanic/flashinfer-windows/releases/download/v0.6.11.post3+spark/flashinfer_jit_cache-0.6.11.post3-cp39-abi3-win_arm64.whl; sys_platform == "win32" and platform_machine == 'ARM64'
 apache-tvm-ffi==0.1.11; sys_platform != "win32"
 apache-tvm-ffi>=0.1.13; sys_platform == "win32" # apache-tvm-ffi>=0.1.13 fixes xgrammar > 0.25 xgrammar_bindings.dll load error
 tilelang==0.1.12; sys_platform != "win32" # excluded on windows to avoid conflicting dependencies as apache-tvm-ffi>=0.1.13 is required and tilelang requires <0.1.13

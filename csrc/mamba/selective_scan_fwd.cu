@@ -415,10 +415,9 @@ void selective_scan_fwd_launch(SSMParamsBase &params, cudaStream_t stream) {
     // Only kNRows == 1 is tested for now, which ofc doesn't differ from previously when we had each block
     // processing 1 row.
     static constexpr int kNRows = 1;
-    // kIsVariableB, kIsVariableC and kHasZ are all set to True to reduce binary size
+    // kIsVariableB and kIsVariableC are set to True to reduce binary size
     static constexpr bool kIsVariableB = true;
     static constexpr bool kIsVariableC = true;
-    static constexpr bool kHasZ = true;
     VLLM_STABLE_DISPATCH_BOOL(params.seqlen % (kNThreads * kNItems) == 0, kIsEvenLen, [&] {
         VLLM_STABLE_DISPATCH_BOOL(params.z_ptr != nullptr , kHasZ, [&] {
             VLLM_STABLE_DISPATCH_BOOL(params.query_start_loc_ptr != nullptr , kVarlen, [&] {
